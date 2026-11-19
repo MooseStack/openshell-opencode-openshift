@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "model",
+    "sandbox",
+    "setup",
+    "openshell"
+  ],
+  "properties": {
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseURL",
+        "id",
+        "secretName",
+        "secretKey",
+        "allowedIPs"
+      ],
+      "properties": {
+        "baseURL": {
+          "type": "string",
+          "pattern": "^https://[^/?#@\\s]+(?:/[^?#\\s]*)?$"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "secretName": {
+          "type": "string",
+          "pattern": "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$"
+        },
+        "secretKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowedIPs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "image",
+        "cpu",
+        "memory",
+        "networkPolicies"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 50,
+          "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$"
+        },
+        "image": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cpu": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "networkPolicies": {
+          "type": "object"
+        },
+        "filesystemPolicy": {
+          "type": "object"
+        },
+        "landlock": {
+          "type": "object"
+        },
+        "process": {
+          "type": "object"
+        },
+        "networkMiddlewares": {
+          "type": "object"
+        },
+        "recreate": {
+          "type": "boolean"
+        }
+      }
+    },
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "image",
+        "cliVersion",
+        "cliChecksums",
+        "deadlineSeconds",
+        "smokeTest",
+        "resources"
+      ],
+      "properties": {
+        "image": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cliVersion": {
+          "const": "0.1.9"
+        },
+        "cliChecksums": {
+          "type": "object",
+          "required": [
+            "x86_64",
+            "aarch64"
+          ],
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "deadlineSeconds": {
+          "type": "integer",
+          "minimum": 600,
+          "maximum": 3600
+        },
+        "smokeTest": {
+          "type": "boolean"
+        },
+        "resources": {
+          "type": "object"
+        }
+      }
+    },
+    "openshell": {
+      "type": "object",
+      "properties": {
+        "fullnameOverride": {
+          "const": "openshell"
+        },
+        "replicaCount": {
+          "const": 1
+        },
+        "global": {
+          "type": "object",
+          "properties": {
+            "image": {
+              "type": "object",
+              "properties": {
+                "tag": {
+                  "const": "0.1.9"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

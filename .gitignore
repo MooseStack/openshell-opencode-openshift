@@ -1,0 +1,6 @@
+*.local.yaml
+.env
+*.key
+*.pem
+__pycache__/
+.helm/

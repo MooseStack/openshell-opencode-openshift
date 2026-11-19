@@ -1,0 +1,12 @@
+The setup Job configured sandbox {{ .Values.sandbox.name }}.
+{{ if .Values.setup.smokeTest }}A real model request was included in setup.{{ else }}Model access was NOT tested (setup.smokeTest=false).{{ end }}
+
+Inspect setup:
+  oc -n {{ .Release.Namespace }} logs job/{{ include "openshellOpencode.name" . }}-setup
+
+Connect from the repository root (requires oc and the OpenShell {{ .Chart.AppVersion }} CLI):
+  ./connect.sh {{ .Release.Namespace }} {{ .Values.sandbox.name }}
+
+Only the configured model endpoint is allowed by default.
+Keep this namespace dedicated to the deployment; the client certificate grants gateway access.
+The shared Agent Sandbox installation is not owned by this Helm release.

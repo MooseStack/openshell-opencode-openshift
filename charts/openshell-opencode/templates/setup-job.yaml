@@ -1,0 +1,75 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "openshellOpencode.name" . }}-setup
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: {{ .Values.setup.deadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openshell-opencode-setup
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "openshellOpencode.name" . }}-setup
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: setup
+          image: {{ .Values.setup.image | quote }}
+          command: [/bin/bash, /config/setup.sh]
+          env:
+            - name: XDG_CONFIG_HOME
+              value: /work/config
+            - name: XDG_CACHE_HOME
+              value: /work/cache
+            - name: XDG_DATA_HOME
+              value: /work/data
+            - name: OPENSHELL_COLOR
+              value: never
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            {{- toYaml .Values.setup.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: work
+              mountPath: /work
+            - name: tmp
+              mountPath: /tmp
+            - name: client-tls
+              mountPath: /tls
+              readOnly: true
+            - name: model-key
+              mountPath: /model-key
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "openshellOpencode.name" . }}-setup
+        - name: work
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: client-tls
+          secret:
+            secretName: {{ .Values.openshell.server.tls.clientTlsSecretName | default "openshell-client-tls" }}
+        - name: model-key
+          secret:
+            secretName: {{ .Values.model.secretName | quote }}
+            items:
+              - key: {{ .Values.model.secretKey | quote }}
+                path: api-key

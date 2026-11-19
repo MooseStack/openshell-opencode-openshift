@@ -1,0 +1,6 @@
+dependencies:
+- name: helm-chart
+  repository: oci://ghcr.io/nvidia/openshell
+  version: 0.1.9
+digest: sha256:7012e0802ea869208616b21fd3b6290781a171730d3492c3d6cba35dd3d823c7
+generated: "2026-11-17T13:58:48.941030025-06:00"

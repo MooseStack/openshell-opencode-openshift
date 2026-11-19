@@ -1,0 +1,107 @@
+# Set these before installing. API keys belong in the existing Secret, never here.
+model:
+  baseURL: "https://yourModelEndpointExample.com/v1"
+  id: "gpt-oss-20b"
+  secretName: model-credentials
+  secretKey: api-key
+  # OpenAI Chat Completions API. The deployment uses @ai-sdk/openai-compatible.
+  # Explicitly allow only the private IPs/CIDRs of your endpoint when necessary.
+  allowedIPs: []
+
+sandbox:
+  name: opencode
+  # Destructive: delete and recreate the sandbox on every setup run.
+  # Back up workspace data first; reset to false after use.
+  recreate: true
+  image: ghcr.io/anomalyco/opencode:1.19.6
+  cpu: "2"
+  memory: 4Gi
+  # Static policies: changes require explicit sandbox recreation.
+  # Nested keys follow the OpenShell policy spec.
+  # Default policies: https://docs.nvidia.com/openshell/how-it-works/policies/default-policy
+  filesystemPolicy:
+    include_workdir: true
+    read_only: [/bin, /usr, /opt, /lib, /proc, /dev/urandom, /app, /etc, /var/log]
+    read_write: [/sandbox, /dev/null] # /tmp is writable by default
+  landlock:
+    compatibility: best_effort
+  # Optional run_as_user and run_as_group; omitted to use runtime identity.
+  process: {}
+  networkMiddlewares: {}
+  # Complete additional network rules, e.g. Git/package hosts. Helm upgrades
+  # reconcile this entire map in place, including removal of omitted rules.
+  networkPolicies:
+    github:
+      name: github
+      endpoints:
+        - host: github.com
+          port: 443
+      binaries:
+        - path: /usr/bin/git
+        - path: /usr/libexec/git-core/git-remote-https
+        - path: /usr/local/bin/opencode
+
+setup:
+  # UBI 9 helper with Bash, curl, jq and standard utilities; no runtime installs.
+  # Devfile base-developer-image:ubi9-latest, pinned for reproducibility.
+  image: quay.io/devfile/base-developer-image@sha256:7a7d9ee0ce34a765eeab66addda731b2d545ba480eef2ac69c872ed9a01b3902
+  # Downloads the official static CLI into an emptyDir, verifying this release's digest.
+  cliVersion: "0.1.9"
+  cliChecksums:
+    x86_64: 3856ac7b6b2e33d6c8ab72a1036444156516e7303da85a9b13f661a2aa63bd2d
+    aarch64: cb923d08703b966f7e0e6b1483ed4ba6ed77bc10812c5502bcc1fb6ee0f6ad59
+  deadlineSeconds: 900
+  # Makes a small real model request and consumes endpoint tokens.
+  smokeTest: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+openshell:
+  fullnameOverride: openshell
+  replicaCount: 1
+  global:
+    image:
+      tag: "0.1.9"
+  # OpenShift restricted-v2 assigns namespace UID/GID. Clear upstream IDs
+  # individually while retaining non-root and seccomp hardening.
+  podSecurityContext:
+    fsGroup: null
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    runAsUser: null
+  supervisor:
+    podSecurityContext:
+      runAsUser: null
+      runAsGroup: null
+      fsGroup: null
+  server:
+    dataStorageSize: 1Gi
+    dataStorageClass: ""
+    workspaceDefaultStorageSize: 5Gi
+    workspaceStorageClass: ""
+    telemetryEnabled: false
+    auth:
+      allowUnauthenticatedUsers: false
+    tls:
+      enableMtls: true
+    sandboxJwt:
+      secretDefaultMode: "0444"
+  gatewayConfig:
+    openshell:
+      version: 2
+    openshell.gateway.mtls_auth:
+      enabled: true
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 1Gi

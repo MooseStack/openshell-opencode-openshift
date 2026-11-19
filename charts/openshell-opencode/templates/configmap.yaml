@@ -1,0 +1,37 @@
+{{- include "openshellOpencode.validate" . -}}
+apiVersion: v1 # Kubernetes core API version for ConfigMaps.
+kind: ConfigMap # Stores non-secret configuration and scripts for the setup Job.
+metadata:
+  # The setup Job mounts this named ConfigMap at /config.
+  name: {{ include "openshellOpencode.name" . }}-setup
+# Each data key becomes a file under /config in the setup container.
+data:
+  # Setup inputs: model and sandbox settings, CLI version/checksums, smoke-test
+  # toggle, and the in-cluster gateway URL. The API key comes from a separate Secret.
+  settings.json: |
+    {{- dict "model" .Values.model "sandbox" .Values.sandbox "setup" .Values.setup "gateway" (printf "https://%s.%s.svc:8080" .Values.openshell.fullnameOverride .Release.Namespace) | toPrettyJson | nindent 4 }}
+  # Desired sandbox security policy. Used at creation; subsequent runs reconcile
+  # network rules while checking that static policy settings have not drifted.
+  policy.json: |
+    {{- include "openshellOpencode.policy" . | fromYaml | toPrettyJson | nindent 4 }}
+  # OpenShell model profile: endpoint access, allowed binary, and credential
+  # mapping. Imported or updated before creating/updating the credential provider.
+  provider.json: |
+    {{- include "openshellOpencode.profile" . | fromYaml | toPrettyJson | nindent 4 }}
+  # OpenCode client configuration, copied into the sandbox at /sandbox/opencode.json.
+  # Selects the model and endpoint and references LLM_API_KEY without embedding it.
+  opencode.json: |
+    {{- include "openshellOpencode.opencode" . | fromYaml | toPrettyJson | nindent 4 }}
+  # Job entrypoint: sources the modules below and runs setup phases in order.
+  setup.sh: |
+    {{- .Files.Get "files/setup.sh" | nindent 4 }}
+
+  # Sourced modules packaged alongside the entrypoint:
+  # setup-common.sh: initialization, redacted logging, CLI calls, and pagination.
+  # setup-bootstrap.sh: verified CLI download and mTLS gateway registration.
+  # setup-sandbox.sh: ownership/static-drift checks, recreation, and readiness.
+  # setup-configuration.sh: provider credentials, network policy, OpenCode, and smoke test.
+  {{- range $path, $_ := .Files.Glob "files/setup-*.sh" }}
+  {{ base $path }}: |
+    {{- $.Files.Get $path | nindent 4 }}
+  {{- end }}
