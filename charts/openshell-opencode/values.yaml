@@ -1,6 +1,6 @@
 # Set these before installing. API keys belong in the existing Secret, never here.
 model:
-  baseURL: "https://yourModelEndpointExample.com/v1"
+  baseURL: "https://yourModelEndpoint.io/v1"
   id: "gpt-oss-20b"
   secretName: model-credentials
   secretKey: api-key
@@ -13,7 +13,7 @@ sandbox:
   # Destructive: delete and recreate the sandbox on every setup run.
   # Back up workspace data first; reset to false after use.
   recreate: true
-  image: ghcr.io/anomalyco/opencode:1.19.6
+  image: docker.io/moosestack/opencode:ubi10-latest
   cpu: "2"
   memory: 4Gi
   # Static policies: changes require explicit sandbox recreation.
@@ -35,6 +35,8 @@ sandbox:
       name: github
       endpoints:
         - host: github.com
+          port: 443
+        - host: raw.githubusercontent.com
           port: 443
       binaries:
         - path: /usr/bin/git
@@ -67,6 +69,9 @@ openshell:
   global:
     image:
       tag: "0.1.9"
+  sandbox:
+    image:
+      pullPolicy: always
   # OpenShift restricted-v2 assigns namespace UID/GID. Clear upstream IDs
   # individually while retaining non-root and seccomp hardening.
   podSecurityContext:
