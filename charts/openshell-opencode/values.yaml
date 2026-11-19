@@ -19,10 +19,11 @@ sandbox:
   # Static policies: changes require explicit sandbox recreation.
   # Nested keys follow the OpenShell policy spec.
   # Default policies: https://docs.nvidia.com/openshell/how-it-works/policies/default-policy
+  # Example - /home directory will fail to be read by opencode, but other directories listed here will.
   filesystemPolicy:
     include_workdir: true
     read_only: [/bin, /usr, /opt, /lib, /proc, /dev/urandom, /app, /etc, /var/log]
-    read_write: [/sandbox, /dev/null] # /tmp is writable by default
+    read_write: [/sandbox, /dev/null, /tmp]
   landlock:
     compatibility: best_effort
   # Optional run_as_user and run_as_group; omitted to use runtime identity.

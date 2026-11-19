@@ -9,13 +9,9 @@ Uses ordinary container Pods and a persistent workspace. No Kata or MicroVM is r
 | Component | Version |
 | --- | --- |
 | OpenShell | 0.1.9 |
-| OpenCode | `ghcr.io/anomalyco/opencode:1.19.6` |
+| OpenCode | `ghcr.io/anomalyco/opencode:1.19.6` or custom built image |
 | Setup helper | Devfile UBI 9 base developer image, digest-pinned |
 | Red Hat build of Agent Sandbox Operator | `preview-0.9` channel, automatic updates |
-
-The setup helper uses [UBI 9](https://github.com/devfile/developer-images/blob/main/base/ubi9/Dockerfile) with preinstalled utilities. The selected upstream OpenCode image remains Alpine-based.
-
-**Status:** Local checks pass; this installation has not yet been tested on a live OpenShift cluster.
 
 ## Architecture
 
@@ -73,7 +69,32 @@ Include the API base path, usually `/v1`, in `baseURL`.
 
 </details>
 
-## 3. Install OpenShell and OpenCode
+## 3. Build a custom OpenCode image (optional)
+
+The [Containerfile](Containerfile) copies OpenCode and its runtime into UBI 10 and installs Git, curl, wget, and skopeo. To use this image, build and push it from this repository to a registry your OpenShift cluster can pull from:
+
+```sh
+podman build -f Containerfile -t quay.io/YOUR_ORG/opencode:ubi10-latest .
+podman push quay.io/YOUR_ORG/opencode:ubi10-latest
+```
+
+Set `sandbox.image` in [values.yaml](charts/openshell-opencode/values.yaml) to that same image reference:
+
+```yaml
+sandbox:
+  image: quay.io/YOUR_ORG/opencode:ubi10-latest
+```
+
+If you skipped the optional build, set `sandbox.image` in [values.yaml](charts/openshell-opencode/values.yaml) to the upstream OpenCode image:
+
+```yaml
+sandbox:
+  image: ghcr.io/anomalyco/opencode:1.19.6
+```
+
+The current [values.yaml](charts/openshell-opencode/values.yaml) selects `docker.io/moosestack/opencode:ubi10-latest`; replace that reference with your chosen image. Ensure the selected image is accessible to the cluster before installing.
+
+## 4. Install OpenShell and OpenCode
 
 Run from this repository:
 
@@ -92,7 +113,7 @@ The chart includes its dependencies. The setup Job automatically:
 
 The real API key is substituted only for approved endpoint requests; OpenCode receives a placeholder.
 
-## 4. Connect
+## 5. Connect
 
 ```sh
 ./connect.sh
@@ -106,7 +127,7 @@ For a different project, sandbox, or local port:
 OPENSHELL_LOCAL_PORT=18080 ./connect.sh my-project my-sandbox
 ```
 
-Access is through the terminal; there is no public Route or browser UI. The upstream image supplies OpenCode and ripgrep; this chart does not add Git or language runtimes.
+Access is through the terminal; there is no public Route or browser UI. The upstream image supplies OpenCode and ripgrep. The custom image also includes Git, curl, wget, and skopeo; neither option adds language runtimes through the chart.
 
 ## Update or troubleshoot
 
