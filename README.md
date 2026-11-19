@@ -17,6 +17,23 @@ The setup helper uses [UBI 9](https://github.com/devfile/developer-images/blob/m
 
 **Status:** Local checks pass; this installation has not yet been tested on a live OpenShift cluster.
 
+## Architecture
+
+```mermaid
+flowchart LR
+    user[User CLI<br/>port-forward + mTLS] --> gateway
+    config[Setup ConfigMap<br/>policy + provider + OpenCode] --> setup[Helm setup Job]
+    key[Secrets<br/>model API key + client TLS] --> setup
+    setup -->|configure via mTLS| gateway[OpenShell gateway<br/>OpenShift Service + StatefulSet]
+    gateway -->|Sandbox CR via Operator| sandbox[OpenCode sandbox Pod<br/>OpenShell runtime]
+    gateway -->|sessions| sandbox
+    gateway --- data[(Gateway data PVC<br/>1 GiB)]
+    sandbox --- workspace[(Workspace PVC<br/>5 GiB at /sandbox)]
+    sandbox -->|approved HTTPS| model[OpenAI-compatible<br/>model endpoint]
+```
+
+The setup Job runs after Helm installation and upgrades. It registers the model provider, creates the sandbox through the Agent Sandbox Operator, and applies its policies. The user connects through a local port-forward; no public Route is created. OpenShell substitutes the API key for approved requests, while the OpenCode configuration in `/sandbox` refers only to a placeholder. [values.yaml](charts/openshell-opencode/values.yaml) also configures a GitHub egress rule; other outbound destinations need their own policy entries.
+
 ## 1. Prerequisites
 
 Use an OpenShift admin login with `oc`, Helm 3, and the [OpenShell 0.1.9 CLI](https://github.com/NVIDIA/OpenShell/releases/tag/v0.1.9).
