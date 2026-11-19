@@ -138,7 +138,7 @@ Back up your workspace, then run [cleanup.sh](cleanup.sh) using your existing `o
 ./cleanup.sh
 ```
 
-This deletes the default `openshell-opencode` release and dedicated project, including all Pods, PVCs, and model credentials. The shared Agent Sandbox Operator remains installed.
+This deletes the default `openshell-opencode` release and dedicated project, including all Pods, PVCs, and model credentials, then removes the Agent Sandbox Operator resources defined in [agent-sandbox-operator.yaml](prerequisites/agent-sandbox-operator.yaml).
 
 <details>
 <summary>Developer checks and references</summary>

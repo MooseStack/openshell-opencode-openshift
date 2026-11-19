@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Completely remove the default installation and its dedicated project.
 # Deletes all application data, including workspace PVCs and model credentials.
-# The shared Agent Sandbox Operator remains installed.
+# Also removes the Agent Sandbox Operator resources from its prerequisite YAML.
 set -euo pipefail
 
 namespace=openshell-opencode
@@ -28,4 +28,14 @@ if ! oc delete project "$namespace" --ignore-not-found --wait=true --timeout=10m
 fi
 remaining=$(oc get namespace "$namespace" --ignore-not-found -o name)
 [[ -z "$remaining" ]] || { echo "Project still exists: $remaining" >&2; exit 1; }
+oc delete -f ./prerequisites/agent-sandbox-operator.yaml \
+  --ignore-not-found --wait=true --timeout=10m
+cat <<'EOF'
+Deleted or already absent:
+  - Helm release: openshell-opencode
+  - OpenShift project: openshell-opencode, including Pods, Jobs, Sandboxes,
+    PVCs, Secrets, Services, ConfigMaps, and NetworkPolicies
+  - Agent Sandbox Operator resources from:
+    prerequisites/agent-sandbox-operator.yaml
+EOF
 echo 'Cleanup complete.'
